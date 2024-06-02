@@ -29,11 +29,28 @@ class GenericRuntime:
             self.exec_code(c)
 
     def exec_code(self, code_piece: str) -> None:
+        # if the code contains input() or os.system(), return Error
         if regex.search(r'(\s|^)?input\(', code_piece) or regex.search(r'(\s|^)?os.system\(', code_piece):
             raise RuntimeError()
+        # exec is a built-in python function to execute python code
+        # _global_vars is a dict containing the global variables that can be used and modified by the code_piece
         exec(code_piece, self._global_vars)
         
     def eval_code(self, expr: str) -> Any:
+        """
+        # Evaluate a simple expression
+        result = evaluator.eval_code("3 + 4")
+        print(result)  # Output: 7
+
+        # Define a variable in the global context and use it in an expression
+        evaluator._global_vars['x'] = 10
+        result = evaluator.eval_code("x * 2")
+        print(result)  # Output: 20
+
+        # Modify a variable in the global context through evaluation
+        evaluator.eval_code("x = x + 5")
+        print(evaluator._global_vars['x'])  # Output: 15
+        """
         return eval(expr, self._global_vars)
     
     def inject(self, var_dict: Dict[str, Any]) -> None:
@@ -90,9 +107,13 @@ class PythonExecutor:
     ):
         try:
             if get_answer_from_stdout:
+                # io to the memory
                 program_io = io.StringIO()
+                # redirect_stdout: move all the standard output to the program_io
                 with redirect_stdout(program_io):
+                    # run the code for at most timeout_length seconds and get all the output to program_io
                     timeout(timeout_length)(runtime.exec_code)('\n'.join(code))
+                # move the the begging of the outputs
                 program_io.seek(0)
                 result = program_io.read()
             elif answer_symbol:
@@ -100,6 +121,7 @@ class PythonExecutor:
                 result = runtime._global_vars[answer_symbol]
             elif answer_expr:
                 timeout(timeout_length)(runtime.exec_code)('\n'.join(code))
+                # eval_code(answer_expr), possibly because the global random variables are modified and can be used..
                 result = timeout(timeout_length)(runtime.eval_code)(answer_expr)
             else:
                 timeout(timeout_length)(runtime.exec_code)('\n'.join(code[:-1]))
@@ -175,14 +197,22 @@ class PythonExecutor:
 def _test():
     batch_code = [
         """
-        print("Hello world!")
-        """
+print("Hello world!")
+        """,
+"""
+import numpy as np
+print(np.random.random(10))
+"""
     ]
 
     executor = PythonExecutor(get_answer_from_stdout=True)
-    predictions = executor.apply(batch_code[0])
+    predictions = executor.apply(batch_code[1])
     print(predictions)
 
+    predictions = executor.batch_apply(batch_code)
+
+
+    print(predictions)
 
 if __name__ == '__main__':
     _test()
