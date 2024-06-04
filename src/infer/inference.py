@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument("--top_p", default=1, type=float)
     parser.add_argument("--max_tokens_per_call", default=1024, type=int)
     parser.add_argument("--shuffle", action="store_true")
-    parser.add_argument("--use_train_prompt_format", action="store_true")
+    parser.add_argument("--use_train_prompt_format", default=False, action="store_true")
     args = parser.parse_args()
     args.top_p = 1 if args.temperature == 0 else args.top_p # top_p must be 1 when using greedy sampling (vllm)
     return args
@@ -68,16 +68,19 @@ def prepare_data(args):
     os.makedirs(f'{args.output_dir}/{model_name}/{args.data_name}', exist_ok=True)
 
     # load all processed samples
+    # find the files in ./output/llm-agents/tora-code-34b-v1.0/math/
     processed_files = [f for f in os.listdir(f"{args.output_dir}/{model_name}/{args.data_name}/") if f.endswith(".jsonl") and f.startswith(out_file_prefix)]    
     processed_samples = []
     for f in processed_files:
         processed_samples.extend(list(load_jsonl(f"{args.output_dir}/{model_name}/{args.data_name}/{f}")))
-
+    #print('aaa', f"{args.output_dir}/{model_name}/{args.data_name}/")
     # dedepulicate
     processed_samples = {sample['idx']: sample for sample in processed_samples}
     processed_idxs = list(processed_samples.keys())
     processed_samples = list(processed_samples.values())
     total_examples = len(examples)
+    # if example has been inferenced...
+    # we can prepare a xx_idxs to control the data to be inferenced...
     examples = [example for example in examples if example['idx'] not in processed_idxs]
     print(f"Idx {args.start} - {args.end}: Remain {len(examples)}/{total_examples} samples.")
     if len(examples) == 0:
@@ -95,18 +98,23 @@ def main(args):
         executor = PythonExecutor(get_answer_expr='solution()')
     else:
         executor = PythonExecutor(get_answer_from_stdout=True)
-
-    # load model
+    print(args.prompt_type, args.use_train_prompt_format)
+    #return 0
+    
+    # load model and determine the number of gpus used 
     if len(examples) > 0:
         available_gpus = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
         llm = LLM(model=args.model_name_or_path, tensor_parallel_size=len(available_gpus))
     samples = []
+    #print(examples[0])
+    #return 0
     for example in tqdm(examples, total=len(examples)):
         idx = example['idx']
 
         # parse question and answer
         example['question'] = parse_question(example, args.data_name)
         gt_cot, gt_ans = parse_ground_truth(example, args.data_name)
+
         full_prompt = construct_prompt(args, example)
 
         sample = {'idx': idx, 'question': example['question'], 'gt_cot': gt_cot, 'gt': gt_ans, 'prompt': full_prompt}
@@ -126,10 +134,12 @@ def main(args):
 
     # repeat n times
     remain_prompts = [sample['prompt'] for sample in samples for _ in range(args.n_sampling)]
-    remain_prompts = [(i, prompt) for i, prompt in enumerate(remain_prompts)]
+    remain_prompts = [(i, prompt) for i, prompt in enumerate(remain_prompts)][:100]
     end_prompts = []
 
     max_func_call = 1 if args.prompt_type in ['cot', 'pal'] else 4
+    
+    #### if the model stops generation or the model writes some code needed to be executed by the external tool..
     stop_tokens = ["</s>", "```output"]
 
     if args.prompt_type in ['cot']:
@@ -140,13 +150,15 @@ def main(args):
     # start inference
     # measure time use
     start_time = time.time()
+    print('The maxmial function call is ', max_func_call)
     for epoch in range(max_func_call):
         print("=" * 50, "Epoch", epoch)
         current_prompts = remain_prompts
+        # if all the queries meet the stop criteria, break
         if len(current_prompts) == 0:
             break
 
-        # get all outputs
+        # get all outputs, each prompt is (idx, prompt_content)
         prompts = [item[1] for item in current_prompts]
         outputs = llm.generate(prompts, SamplingParams(
                         temperature=args.temperature,
@@ -158,13 +170,16 @@ def main(args):
 
         outputs = sorted(outputs, key=lambda x: int(x.request_id)) # sort outputs by request_id
         outputs = [output.outputs[0].text for output in outputs]
+        print(len(outputs), len(current_prompts))
         assert len(outputs) == len(current_prompts)
 
         # process all outputs
         remain_prompts = []
         remain_codes = []
+        
         for (i, query), output in zip(current_prompts, outputs):
             output = output.rstrip()
+            # append the y_s to the current state (history)
             query += output
             if args.prompt_type == "pal":
                 remain_prompts.append((i, query))
@@ -172,22 +187,28 @@ def main(args):
                     output = extract_program(query)
                 remain_codes.append(output)
             elif args.prompt_type == "cot":
+                # for cot, the prompt ends for one round
                 end_prompts.append((i, query))
             elif ("boxed" not in output and output.endswith("```")):
+                # the model does not output the final answer, meanwhile, a code needs to be executed
                 program = extract_program(query)
                 remain_prompts.append((i, query))
                 remain_codes.append(program)
             else:
+                # the model outputs the final answer..
                 end_prompts.append((i, query))
 
-        # execute the remain prompts
+        # execute the codes and get the results
+        # note that the order of remain_codes is the same as remain_prompts
         remain_results = executor.batch_apply(remain_codes)
         for k in range(len(remain_prompts)):
             i, query = remain_prompts[k]
             res, report = remain_results[k]
             exec_result = res if res else report
+            # for pot, there is only one round and we use the output of the code as the final answer
             if "pal" in args.prompt_type:
                 exec_result = "\\boxed{" + exec_result + "}"
+            # for tora format, we add the observation to the history
             exec_result = f"\n```output\n{exec_result}\n```\n"
             query += exec_result
             # not end
@@ -201,9 +222,18 @@ def main(args):
     # sort by idx
     end_prompts = sorted(end_prompts, key=lambda x: x[0])
     ans_split = "<|assistant|>" if args.use_train_prompt_format else "Question:"
+    #print(end_prompts[0], "\n\n\n")
+    #print(end_prompts[1], "\n\n\n")
+    #print(end_prompts[2], "\n\n\n")
     codes = [prompt.split(ans_split)[-1].strip() for _, prompt in end_prompts]
-
+    #print(codes[0], "\n\n\n")
+    #print(codes[1], "\n\n\n")
+    #print(codes[2], "\n\n\n")
+    # only one round, code = ```python some code ``` and ```output: the output``` and also the final result with box...
+    
     # extract preds
+    # run_execute will extract the code needed to run...
+    # for tora, we only extract the final answer but do not run the code
     results = [run_execute(executor, code, args.prompt_type) for code in codes]
     time_use = time.time() - start_time
 
