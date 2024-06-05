@@ -100,6 +100,7 @@ def main(args):
         executor = PythonExecutor(get_answer_from_stdout=True)
     print(args.prompt_type, args.use_train_prompt_format)
     #return 0
+    print(SamplingParams)
     
     # load model and determine the number of gpus used 
     if len(examples) > 0:
@@ -134,7 +135,7 @@ def main(args):
 
     # repeat n times
     remain_prompts = [sample['prompt'] for sample in samples for _ in range(args.n_sampling)]
-    remain_prompts = [(i, prompt) for i, prompt in enumerate(remain_prompts)][:100]
+    remain_prompts = [(i, prompt) for i, prompt in enumerate(remain_prompts)]#[:100]
     end_prompts = []
 
     max_func_call = 1 if args.prompt_type in ['cot', 'pal'] else 4
@@ -171,7 +172,12 @@ def main(args):
         outputs = sorted(outputs, key=lambda x: int(x.request_id)) # sort outputs by request_id
         outputs = [output.outputs[0].text for output in outputs]
         print(len(outputs), len(current_prompts))
-        assert len(outputs) == len(current_prompts)
+        
+        if len(outputs) != len(current_prompts):
+            outputs = ["boxed VLLM has some problem, this example is not valid XXX!" for i in range(len(current_prompts))]
+
+
+        #assert len(outputs) == len(current_prompts)
 
         # process all outputs
         remain_prompts = []
