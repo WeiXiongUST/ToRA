@@ -100,8 +100,8 @@ def main(args):
         executor = PythonExecutor(get_answer_from_stdout=True)
     print(args.prompt_type, args.use_train_prompt_format)
     #return 0
-    print(SamplingParams)
-    
+    #print(SamplingParams)
+    SamplingParams.seed = args.seed
     # load model and determine the number of gpus used 
     if len(examples) > 0:
         available_gpus = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
