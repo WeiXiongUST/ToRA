@@ -105,7 +105,7 @@ def main(args):
     # load model and determine the number of gpus used 
     if len(examples) > 0:
         available_gpus = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
-        llm = LLM(model=args.model_name_or_path, tensor_parallel_size=len(available_gpus))
+        llm = LLM(model=args.model_name_or_path, tensor_parallel_size=len(available_gpus), seed=args.seed)
     samples = []
     #print(examples[0])
     #return 0
