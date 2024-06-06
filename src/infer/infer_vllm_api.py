@@ -10,13 +10,13 @@ import time
 from vllm import LLM, SamplingParams
 from datetime import datetime
 from tqdm import tqdm
-
+import requests
 from eval.evaluate import evaluate
 from utils.utils import set_seed, load_jsonl, save_jsonl, construct_prompt
 from utils.parser import *
 from utils.data_loader import load_data
 from utils.python_executor import PythonExecutor
-
+from concurrent.future import ThreadPoolExecutor, as_completed
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -195,7 +195,7 @@ def main(args):
                         stop=stop_tokens,
         ))
         '''
-        with ThreadPoolExecutor(max_workers=script_args.max_workers) as executor:
+        with ThreadPoolExecutor(512) as executor:
             result = [
                 executor.submit(query_model, prompts[i], default_args, ports[i % len(ports)]) for i in range(len(prompts))
             ]
