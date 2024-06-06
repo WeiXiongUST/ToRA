@@ -16,7 +16,7 @@ from utils.utils import set_seed, load_jsonl, save_jsonl, construct_prompt
 from utils.parser import *
 from utils.data_loader import load_data
 from utils.python_executor import PythonExecutor
-from concurrent.future import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def parse_args():
     parser = argparse.ArgumentParser()
