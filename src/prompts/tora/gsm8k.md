@@ -10,9 +10,9 @@ Here are some examples you may refer to:
 
 ---
 
-Question: Olivia has $23. She bought five bagels for $3 each. How much money does she have left?
-
-Solution:
+<|user|>
+Olivia has $23. She bought five bagels for $3 each. How much money does she have left?
+<|assistant|>
 To solve the problem, we can use the python code.
 ```python
 def money_left():
@@ -26,9 +26,11 @@ def money_left():
 remaining_money = money_left()
 print(remaining_money)
 ```
+<|user|>
 ```output
 15 The result is not correct.
 ```
+<|assistant|>
 In the above solution, the error lies in the operation used to calculate the total cost of the bagels. Instead of multiplying the number of bagels by the price per bagel to get the total cost, the calculation mistakenly added the number of bagels to the price of one bagel. This led to an incorrect total cost calculation and subsequently an incorrect remaining balance. Let me correct it.
 ```python
 def money_left():
@@ -41,17 +43,19 @@ def money_left():
  
 remaining_money = money_left()
 print(remaining_money)
+<|user|>
 ```
 ```output
 8
 ```
-
+<|assistant|>
 Therefore, Olivia has $\boxed{8}$ dollars left.
 
 ---
 
-Question: There were nine computers in the server room. Five more computers were installed each day, from monday to thursday. How many computers are now in the server room?
-Solution:
+<|user|>
+There were nine computers in the server room. Five more computers were installed each day, from monday to thursday. How many computers are now in the server room?
+<|assistant|>
 ```python
 def total_computers():
     computers_initial = 9
@@ -64,17 +68,18 @@ def total_computers():
 total_computers = total_computers()
 print(total_computers)
 ```
+<|user|>
 ```output
 29
 ```
+<|assistant|>
 There're $\boxed{29}$ computers in the server room.
 
 ---
 
-Question: Michael had 58 golf balls. On tuesday, he lost 23 golf balls. On wednesday, he lost 2 more. How many golf balls did he have at the end of wednesday?
-
-Solution:
-
+<|user|>
+Michael had 58 golf balls. On tuesday, he lost 23 golf balls. On wednesday, he lost 2 more. How many golf balls did he have at the end of wednesday?
+<|assistant|>
 ```python
 def golf_balls_left():
     initial_balls = 58
@@ -86,9 +91,11 @@ def golf_balls_left():
 remaining_balls = golf_balls_left()
 print(remaining_balls)
 ```
+<|user|>
 ```output
 56 The result is not correct.
 ```
+<|assistant|>
 The error in this solution arises from incorrectly accounting for the golf balls lost. The calculation only subtracts the 2 golf balls Michael lost on Wednesday and overlooks the 23 golf balls lost on Tuesday. Let me correct it.
 
 ```python
@@ -103,9 +110,11 @@ def remaining_golf_balls():
 answer = remaining_golf_balls() 
 print(answer)
 ```
+<|user|>
 ```output
 33
 ```
+<|assistant|>
 Therefore, Michael had $\boxed{33}$ golf balls at the end of Wednesday.
 
 ---
