@@ -33,7 +33,7 @@ print(remaining_money)
 <|user|>
 
 ```output
-15 The result is not correct.
+15
 ```
 
 <|assistant|>
@@ -116,7 +116,7 @@ print(remaining_balls)
 <|user|>
 
 ```output
-56 The result is not correct.
+56
 ```
 
 <|assistant|>
