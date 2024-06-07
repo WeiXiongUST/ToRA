@@ -70,7 +70,8 @@ def construct_prompt(args, example):
     if args.use_train_prompt_format:
         full_prompt = f"<|user|>\n{example['question']}\n<|assistant|>\n"
     elif "tora" in args.prompt_type:
-        context = f"Question: {example['question']}\n\nSolution:"
+        #context = f"Question: {example['question']}\n\nSolution:"
+        context = f"<|user|>\n{example['question']}\n<|assistant|>\n"
         full_prompt = demo_prompt + context
     elif args.prompt_type in ["direct", "cot"]:
         context = f"Question: {example['question']}\nAnswer:"
