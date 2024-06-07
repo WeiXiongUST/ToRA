@@ -265,12 +265,13 @@ def main(args):
                 exec_result = "\\boxed{" + exec_result + "}"
             # for tora format, we add the observation to the history
             #####
+            #<|user|>\n{example['question']}\n<|assistant|>\n
             if 'error' in exec_result:
-              exec_result = f"\n```output\n{exec_result} The result is not correct.\n```\n"
+              exec_result = f"\n<|user|>\n```output\n{exec_result} The result is not correct.\n```\n<|assistant|>\n"
             elif not checker(all_gts[i], exec_result):
-              exec_result = f"\n```output\n{exec_result} The result is not correct.\n```\n"
+              exec_result = f"\n<|user|>\n```output\n{exec_result} The result is not correct.\n```\n<|assistant|>\n"
             else:
-              exec_result = f"\n```output\n{exec_result}\n```\n"
+              exec_result = f"\n<|user|>\n```output\n{exec_result}\n```\n<|assistant|>\n"
             query += exec_result
             # not end
             if epoch == max_func_call - 1:
