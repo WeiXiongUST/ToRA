@@ -203,7 +203,7 @@ def main(args):
             for _ in tqdm(as_completed(result), total=len(result)):
                 pass
 
-            outputs = [r.result() for r in result]
+            outputs = [r.result()[0] for r in result]
 
         #outputs = sorted(outputs, key=lambda x: int(x.request_id)) # sort outputs by request_id
         #outputs = [output.outputs[0].text for output in outputs]
