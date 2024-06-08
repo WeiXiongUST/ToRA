@@ -68,7 +68,9 @@ def load_prompt(data_name, prompt_type):
 def construct_prompt(args, example):
     demo_prompt = load_prompt(args.data_name, args.prompt_type)
     if args.use_train_prompt_format:
-        full_prompt = f"<|user|>\n{example['question']}\n<|assistant|>\n"
+        #full_prompt = f"<|user|>\n{example['question']}\n<|assistant|>\n"
+        context = f"<|user|>\n{example['question']}\n<|assistant|>\n"
+        full_prompt = demo_prompt + context
     elif "tora" in args.prompt_type:
         #context = f"Question: {example['question']}\n\nSolution:"
         context = f"<|user|>\n{example['question']}\n<|assistant|>\n"
