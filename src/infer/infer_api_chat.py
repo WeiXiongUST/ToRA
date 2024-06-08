@@ -179,7 +179,7 @@ def main(args):
 
     end_prompts = []
 
-    max_func_call = 1 if args.prompt_type in ['cot', 'pal'] else 4
+    max_func_call = 1 if args.prompt_type in ['cot', 'pal'] else 6
 
     #### if the model stops generation or the model writes some code needed to be executed by the external tool..
     stop_tokens = ["</s>", "```output", '\n<|user|>']
