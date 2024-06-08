@@ -19,7 +19,7 @@ NUM_TEST_SAMPLE=1000
 for ((i=0; i<=8000; i+=1))
 do
 TOKENIZERS_PARALLELISM=false \
-python -um infer.infer_api_chat.py \
+python -um infer.infer_api_chat \
 --model_name_or_path ${MODEL_NAME_OR_PATH} \
 --data_name ${DATA_NAME} \
 --output_dir ${OUTPUT_DIR} \
