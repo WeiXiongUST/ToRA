@@ -249,7 +249,7 @@ def main(args):
                 # for cot, the prompt ends for one round
                 end_prompts.append((i, query))
             elif ("boxed" not in output and output.endswith("```")):
-                print("i am here11")
+                #print("i am here11")
                 # the model does not output the final answer, meanwhile, a code needs to be executed
                 program = extract_program(query)
                 remain_prompts.append((i, query))
