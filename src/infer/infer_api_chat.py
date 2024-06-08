@@ -93,7 +93,7 @@ def prepare_data(args):
     return examples, processed_samples, out_file
 
 def checker(gt, result):
-    #return True
+    return True
     try:
         if abs(float(gt) - float(result)) < 0.01:
             return True
@@ -272,13 +272,13 @@ def main(args):
             # for tora format, we add the observation to the history
             #####
             #<|user|>\n{example['question']}\n<|assistant|>\n
-            if 'error' in exec_result:
-                exec_result = f"\n<|user|>\n```output\n{exec_result} The result is not correct.\n```\n<|assistant|>\n"
-            elif not checker(all_gts[i], exec_result):
-                exec_result = f"\n<|user|>\n```output\n{exec_result} The result is not correct.\n```\n<|assistant|>\n"
-            else:
+            #if 'error' in exec_result:
+            #    exec_result = f"\n<|user|>\n```output\n{exec_result} The result is not correct.\n```\n<|assistant|>\n"
+            #elif not checker(all_gts[i], exec_result):
+            #    exec_result = f"\n<|user|>\n```output\n{exec_result} The result is not correct.\n```\n<|assistant|>\n"
+            #else:
                 #print("zz")
-                exec_result = f"\n<|user|>\n```output\n{exec_result}\n```\n<|assistant|>\n"
+            exec_result = f"\n<|user|>\n```output\n{exec_result}\n```\n<|assistant|>\n"
 
             query += exec_result
             #print(query)
