@@ -34,8 +34,8 @@ def convert_to_spherical():
     # Calculate theta
     theta = sp.atan2(y, x)  # Using atan2 to handle division by zero cases
     
-    # Calculate phi - introduce a syntax error by misspelling "acos" as "acs"
-    phi = sp.acs(z / rho)  # This will cause a syntax error because "acs" is not a function in sympy
+    # Calculate phi
+    phi = sp.acs(z / rho) 
     
     return (rho, theta, phi)
 
@@ -97,7 +97,7 @@ Compute $1011_2 + 101_2 - 1100_2 + 1101_2$.  Express your answer in base 2.
 
 <|assistant|>
 
-To perform this calculation, we convert the binary numbers to decimal, perform the arithmetic, and then convert the result back to binary. Here's a Python function to perform the computation with an intentional mistake:
+To perform this calculation, we convert the binary numbers to decimal, perform the arithmetic, and then convert the result back to binary. Here's a Python function to perform the computation:
 
 
 ```python
