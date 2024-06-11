@@ -7,8 +7,8 @@ MODEL_NAME_OR_PATH="llm-agents/tora-code-34b-v1.0"
 
 # DATA_LIST = ['math', 'gsm8k', 'gsm-hard', 'svamp', 'tabmwp', 'asdiv', 'mawps']
 
-DATA_NAME="math"
-# DATA_NAME="gsm8k"
+#DATA_NAME="math"
+DATA_NAME="gsm8k"
 OUTPUT_DIR="./output1"
 
 SPLIT="train"
