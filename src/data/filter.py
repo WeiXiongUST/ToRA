@@ -58,16 +58,18 @@ def parse_conversation(text):
     return structured_conversation
 
 new_data = []
+all_idx = []
 for sample in ds_filtered:
     a = parse_conversation(ds_filtered[0]['my_solu'][0])
-    new_data.append(a)
-
+    if len(a) > 0:
+        new_data.append({"messages": a, 'idx': sample['idx'], 'gt': sample['gt'])
+        all_idx.append(sample['idx'])
 import json
 
 output_eval_dataset = {}
 output_eval_dataset["type"] = "text_only"
 output_eval_dataset["instances"] = new_data
-print("I collect ", len(gathered_data), "samples")
+print("I collect ", len(new_data), "samples")
 
 
 with open(output_dir, "w", encoding="utf8") as f:
