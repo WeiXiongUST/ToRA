@@ -62,7 +62,7 @@ all_idx = []
 for sample in ds_filtered:
     a = parse_conversation(sample['my_solu'][0])
     if len(a) > 0:
-        new_data.append({"messages": a, 'idx': sample['idx'], 'gt': sample['gt'])
+        new_data.append({"messages": a, 'idx': sample['idx'], 'gt': sample['gt']})
         all_idx.append(sample['idx'])
 import json
 
