@@ -52,7 +52,7 @@ def parse_conversation(text):
     
     count = text.count('\\boxed')
     if count != 1:
-        print("no boxed or too many boxed")
+        #print("no boxed or too many boxed")
         return []
 
     return structured_conversation
@@ -60,7 +60,7 @@ def parse_conversation(text):
 new_data = []
 all_idx = []
 for sample in ds_filtered:
-    a = parse_conversation(ds_filtered[0]['my_solu'][0])
+    a = parse_conversation(sample['my_solu'][0])
     if len(a) > 0:
         new_data.append({"messages": a, 'idx': sample['idx'], 'gt': sample['gt'])
         all_idx.append(sample['idx'])
