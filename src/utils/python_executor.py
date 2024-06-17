@@ -144,15 +144,16 @@ class PythonExecutor:
         except:
             #result = ''
             report = traceback.format_exc().split('\n')[-2]
-            result = str({"result":"", "error_message": report})
+            result = json.dumps({"result":"", "error_message": report})
         return result, report
 
     def apply(self, code):
         return self.single_batch_apply([code])[0]
 
     def batch_apply(self, batch_code_seq):
-        batch_results = []
+        #batch_results = []
         #print(batch_code_seq)
+        all_processed_codes = []
         for code_seq in batch_code_seq:
             
             z = """
@@ -195,16 +196,28 @@ except Exception:
 print(json.dumps(to_return))
 """
             #print(z)
-            prediction = self.apply(z)
-            print(prediction)
+            all_processed_codes.append(z)
+            #prediction = self.apply(z)
+            #print(prediction)
+            #dict_data = json.loads(prediction[0])
+
+            #if dict_data['error_message']:
+            #    batch_results.append(('', dict_data['error_message']))
+            #else:
+            #    batch_results.append((dict_data['result'], ''))
+
+        my_results = self.old_batch_apply(all_processed_codes)
+        batch_results = []
+        for prediction in my_results:
             dict_data = json.loads(prediction[0])
 
             if dict_data['error_message']:
                 batch_results.append(('', dict_data['error_message']))
             else:
                 batch_results.append((dict_data['result'], ''))
-
         return batch_results
+
+        
     @staticmethod
     def truncate(s, max_length=400):
         half = max_length // 2
@@ -212,7 +225,7 @@ print(json.dumps(to_return))
             s = s[:half] + "..." + s[-half:]
         return s
             
-    def single_batch_apply(self, batch_code):
+    def old_batch_apply(self, batch_code):
 
         all_code_snippets = self.process_generation_to_code(batch_code)
 
