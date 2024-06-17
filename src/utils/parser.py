@@ -221,6 +221,30 @@ def extract_program(result: str, last_only=True):
     return program
 
 
+def extract_program_all(result: str, last_only=False):
+    """
+    extract the program after "```python", and before "```"
+    """
+    all_program = []
+    start = False
+    for line in result.split("\n"):
+        if line.startswith("```python"):
+            program = ""
+            #if last_only:
+            #    program = "" # only extract the last program
+            #else:
+                #program += "\n# ========\n"
+
+            start = True
+        elif line.startswith("```"):
+            start = False
+            all_program.append(program)
+            program = ""
+        elif start:
+            program += line + "\n"
+    return program
+
+
 def extract_program_output(pred_str):
     """
     extract output between the last ```output\n...\n```
@@ -233,6 +257,7 @@ def extract_program_output(pred_str):
         pred_str = pred_str.split('```')[0]
     output = pred_str.strip()
     return output
+
 
 
 def parse_ground_truth(example: Dict[str, Any], data_name):
