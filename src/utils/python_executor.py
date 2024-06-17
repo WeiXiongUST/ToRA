@@ -142,23 +142,19 @@ class PythonExecutor:
             str(result)
             pickle.dumps(result) # serialization check
         except:
-            result = ''
+            #result = ''
             report = traceback.format_exc().split('\n')[-2]
+            result = str({"result":"", "error_message": report})
         return result, report
 
     def apply(self, code):
         return self.single_batch_apply([code])[0]
 
-    @staticmethod
-    def truncate(s, max_length=400):
-        half = max_length // 2
-        if len(s) > max_length:
-            s = s[:half] + "..." + s[-half:]
-        return s
-
     def batch_apply(self, batch_code_seq):
         batch_results = []
+        #print(batch_code_seq)
         for code_seq in batch_code_seq:
+            
             z = """
 import traceback
 import json
@@ -170,7 +166,7 @@ os.environ['OPENBLAS_NUM_THREADS'] = '16'
 from IPython.core.interactiveshell import InteractiveShell
 from IPython.utils import io
 code_snippets = []
-"""    
+"""
             for code_snippet in code_seq:
                 z += f'\ncode_snippets.append("""{code_snippet}""")\n'
 
@@ -198,8 +194,9 @@ except Exception:
     }}
 print(json.dumps(to_return))
 """
-
+            #print(z)
             prediction = self.apply(z)
+            print(prediction)
             dict_data = json.loads(prediction[0])
 
             if dict_data['error_message']:
@@ -208,6 +205,12 @@ print(json.dumps(to_return))
                 batch_results.append((dict_data['result'], ''))
 
         return batch_results
+    @staticmethod
+    def truncate(s, max_length=400):
+        half = max_length // 2
+        if len(s) > max_length:
+            s = s[:half] + "..." + s[-half:]
+        return s
             
     def single_batch_apply(self, batch_code):
 
@@ -259,5 +262,4 @@ print(json.dumps(to_return))
             ####
             batch_results.append((res.strip().replace("Out[1]: ", ""), report))
         return batch_results
-
 
