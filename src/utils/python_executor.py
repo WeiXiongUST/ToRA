@@ -15,6 +15,18 @@ from concurrent.futures import TimeoutError
 from functools import partial
 from timeout_decorator import timeout
 from contextlib import redirect_stdout
+import json
+
+
+
+NOT_EXECUTED = "<not_executed>"
+EXECUTION_ERROR = "Execution error:"
+SYNTAX_ERROR = "Syntax error:"
+RESULT_NOT_DEFINED_ERROR = "Result is not defined"
+TIMEOUT_ERROR = "timeout"
+UNDEFINED_ERROR = "Undefined error:"
+ERROR_PREFIXES = (EXECUTION_ERROR, SYNTAX_ERROR, RESULT_NOT_DEFINED_ERROR, TIMEOUT_ERROR, UNDEFINED_ERROR)
+
 
 
 class GenericRuntime:
@@ -135,7 +147,7 @@ class PythonExecutor:
         return result, report
 
     def apply(self, code):
-        return self.batch_apply([code])[0]
+        return self.single_batch_apply([code])[0]
 
     @staticmethod
     def truncate(s, max_length=400):
@@ -144,7 +156,61 @@ class PythonExecutor:
             s = s[:half] + "..." + s[-half:]
         return s
 
-    def batch_apply(self, batch_code):
+    def batch_apply(self, batch_code_seq):
+        batch_results = []
+        for code_seq in batch_code_seq:
+            z = """
+import traceback
+import json
+import os
+import warnings
+warnings.filterwarnings('ignore')
+os.environ['OPENBLAS_NUM_THREADS'] = '16'
+
+from IPython.core.interactiveshell import InteractiveShell
+from IPython.utils import io
+code_snippets = []
+"""    
+            for code_snippet in code_seq:
+                z += f'\ncode_snippets.append("""{code_snippet}""")\n'
+
+            z += f"""
+try:
+    shell = InteractiveShell()
+    for tmp_code in code_snippets:
+        with io.capture_output() as captured:
+            exec_result = shell.run_cell(tmp_code)
+    output = f"{{captured.stdout}}{{captured.stderr}}".strip().replace("Out[1]: ", "")    
+    error_message = ''
+    if exec_result.error_in_exec is not None:
+        error_message = f"{EXECUTION_ERROR} {{str(exec_result.error_in_exec)}}"
+    elif exec_result.error_before_exec is not None:
+        # full traceback will be part of output
+        error_message = f"{SYNTAX_ERROR} {{str(exec_result.error_before_exec)}}"
+    elif output == "":
+        error_message = "{RESULT_NOT_DEFINED_ERROR}"
+    to_return = {{"result": output, "error_message": error_message}}
+except Exception:
+    # removing useless prefix from traceback
+    to_return = {{
+        "result": None,
+        "error_message": "{UNDEFINED_ERROR}" + "\\n".join(traceback.format_exc().split("\\n")[3:]),
+    }}
+print(json.dumps(to_return))
+"""
+
+            prediction = self.apply(z)
+            dict_data = json.loads(prediction[0])
+
+            if dict_data['error_message']:
+                batch_results.append(('', dict_data['error_message']))
+            else:
+                batch_results.append((dict_data['result'], ''))
+
+        return batch_results
+            
+    def single_batch_apply(self, batch_code):
+
         all_code_snippets = self.process_generation_to_code(batch_code)
 
         timeout_cnt = 0
@@ -173,11 +239,11 @@ class PythonExecutor:
                 except StopIteration:
                     break
                 except TimeoutError as error:
-                    print(error)
+                    #print(error)
                     all_exec_results.append(("", "Timeout Error"))
                     timeout_cnt += 1
                 except Exception as error:
-                    print(error)
+                    #print(error)
                     exit()
                 if progress_bar is not None:
                     progress_bar.update(1) 
@@ -194,97 +260,4 @@ class PythonExecutor:
             batch_results.append((res.strip().replace("Out[1]: ", ""), report))
         return batch_results
 
-NOT_EXECUTED = "<not_executed>"
-EXECUTION_ERROR = "Execution error:"
-SYNTAX_ERROR = "Syntax error:"
-RESULT_NOT_DEFINED_ERROR = "Result is not defined"
-TIMEOUT_ERROR = "timeout"
-UNDEFINED_ERROR = "Undefined error:"
-ERROR_PREFIXES = (EXECUTION_ERROR, SYNTAX_ERROR, RESULT_NOT_DEFINED_ERROR, TIMEOUT_ERROR, UNDEFINED_ERROR)
 
-
-
-def _test():
-    batch_code = [
-        """
-#print("Hello world!")
-"xxx"
-c = tt + 1
-""",
-        """
-from sympy import symbols, Eq, solve\n\n# Define the variables\nm = symbols('m')\nr = symbols('r')\n\n# Number of places in the new formation\nnew_formation = 2 * m + r\n\n# Original number of places (considering 2 members left over)\nold_formation = new_formation - 2 * m\n\n# The equation for the total number of band members\nband_members = m * r\n\n# Equations for $m$ and $r$ \neq1 = Eq(band_members, old_formation)\neq2 = Eq(band_members, new_formation)\n\nsolutions = solve((eq1, eq2))\nprint(solutions)\n
-""",
-"""
-\nold_formation = new_formation - 2 * m\n\n# Calculate the maximum number of band members (which is the sum of places in the formation)\nmax_band_members = old_formation + 2 * m\nmax_band_members\n
-"""
-    ]
-    z = """
-import traceback
-import json
-import os
-import warnings
-warnings.filterwarnings('ignore')
-os.environ['OPENBLAS_NUM_THREADS'] = '16'
-
-from IPython.core.interactiveshell import InteractiveShell
-from IPython.utils import io
-code_snippets = []
-"""
-    for code_snippet in batch_code:
-        z += f'\ncode_snippets.append("""{code_snippet}""")\n'
-
-
-    z += f"""
-try:
-    shell = InteractiveShell()
-    for code in code_snippets:
-        with io.capture_output() as captured:
-            exec_result = shell.run_cell(code)
-
-
-    output = f"{{captured.stdout}}{{captured.stderr}}".strip().replace("Out[1]: ", "")    
-    error_message = ""
-    if exec_result.error_in_exec is not None:
-        # full traceback will be part of output
-        error_message = f"{EXECUTION_ERROR} {{str(exec_result.error_in_exec)}}"
-    elif exec_result.error_before_exec is not None:
-        # full traceback will be part of output
-        error_message = f"{SYNTAX_ERROR} {{str(exec_result.error_before_exec)}}"
-    elif output == "":
-        error_message = "{RESULT_NOT_DEFINED_ERROR}"
-    to_return = {{"result": output, "error_message": error_message}}
-except Exception:
-    # removing useless prefix from traceback
-    to_return = {{
-        "result": None,
-        "error_message": "{UNDEFINED_ERROR}" + "\\n".join(traceback.format_exc().split("\\n")[3:]),
-    }}
-print(json.dumps(to_return))
-
-    #print(output)
-"""
-#traceback.format_exc().split('\n')[-2]
-#        "error_message": "{UNDEFINED_ERROR}" + "\\n".join(traceback.format_exc().split("\\n")[3:]),
-
-    #z = z + 'shell.run_cell(code_snippets[0])\n'
-    executor = PythonExecutor(get_answer_from_stdout=True)
-    predictions = executor.apply(z)
-    import json
-    dict_data = json.loads(predictions[0])
-
-    if dict_data['error_message']:
-
-        print("", dict_data['error_message'])
-    
-    else:
-
-        print(dict_data['result'], dict_data['error_message'])
-
-    #predictions = executor.batch_apply(batch_code)
-
-
-    #print(predictions)
-
-
-if __name__ == '__main__':
-    _test()
