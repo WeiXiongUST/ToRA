@@ -66,14 +66,16 @@ def load_prompt(data_name, prompt_type):
     return prompt
 
 def construct_prompt(args, example):
-    demo_prompt = load_prompt(args.data_name, args.prompt_type)
+    # to enable in-context learning, we change demo_prompt
+    #demo_prompt = load_prompt(args.data_name, args.prompt_type)
+    demo_prompt = ""
     if args.use_train_prompt_format:
         #full_prompt = f"<|user|>\n{example['question']}\n<|assistant|>\n"
-        context = f"<|user|>\n{example['question']}\n<|assistant|>\n"
+        context = f"<bos><start_of_turn>user\n{example['question']}<end_of_turn>\n<start_of_turn>model\n"
         full_prompt = demo_prompt + context
     elif "tora" in args.prompt_type:
         #context = f"Question: {example['question']}\n\nSolution:"
-        context = f"<|user|>\n{example['question']}\n<|assistant|>\n"
+        context = f"<bos><start_of_turn>user\n{example['question']}<end_of_turn>\n<start_of_turn>model\n"
         full_prompt = demo_prompt + context
     elif args.prompt_type in ["direct", "cot"]:
         context = f"Question: {example['question']}\nAnswer:"
