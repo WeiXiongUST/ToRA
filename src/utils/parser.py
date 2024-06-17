@@ -242,7 +242,7 @@ def extract_program_all(result: str, last_only=False):
             program = ""
         elif start:
             program += line + "\n"
-    return program
+    return all_program
 
 
 def extract_program_output(pred_str):
