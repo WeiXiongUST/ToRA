@@ -29,6 +29,9 @@ tokenizer = AutoTokenizer.from_pretrained(peft_config.base_model_name_or_path)
 model = PeftModel.from_pretrained(model, args.lora)
 model = model.merge_and_unload()
 
-print(model)
+#print(model)
 
-model.save_pretrained(args.output)
+#model.save_pretrained(args.output)
+
+model.push_to_hub(args.output)
+tokenizer.push_to_hub(args.output)
